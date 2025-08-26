@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MAVEN_VERSION="3.9.9"
+WRAP_DIR="$(cd "$(dirname "$0")" && pwd)"
+CACHE_DIR="${WRAP_DIR}/../.mvn/apache-maven-${MAVEN_VERSION}"
+M2_HOME_DIR="${CACHE_DIR}/apache-maven-${MAVEN_VERSION}"
+MAVEN_BIN="${M2_HOME_DIR}/bin/mvn"
+
+if [[ ! -x "${MAVEN_BIN}" ]]; then
+	mkdir -p "${CACHE_DIR}"
+	ARCHIVE="apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+	URL="https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/${ARCHIVE}"
+	TMP_TGZ="${CACHE_DIR}/${ARCHIVE}"
+	echo "Downloading Maven ${MAVEN_VERSION}..."
+	if command -v curl >/dev/null 2>&1; then
+		curl -fsSL "${URL}" -o "${TMP_TGZ}"
+	elif command -v wget >/dev/null 2>&1; then
+		wget -q "${URL}" -O "${TMP_TGZ}"
+	else
+		echo "Error: curl or wget required to bootstrap Maven" >&2
+		exit 1
+	fi
+	tar -xzf "${TMP_TGZ}" -C "${CACHE_DIR}"
+	rm -f "${TMP_TGZ}"
+fi
+
+export MAVEN_HOME="${M2_HOME_DIR}"
+export M2_HOME="${M2_HOME_DIR}"
+export JAVA_HOME="${JAVA_HOME:-}"
+
+exec "${MAVEN_BIN}" "$@"
